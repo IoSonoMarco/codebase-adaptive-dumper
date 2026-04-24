@@ -5,8 +5,124 @@ containing only the code a given target script actually needs from your
 internal `lib/` package.
 
 Unused functions, classes, constants, and `__init__.py` re-exports are
-aggressively removed. The resulting dump is sufficient for a new person (or
-LLM) to reconstruct and run the target script.
+aggressively removed. The resulting dump is sufficient for a new person, **or
+an LLM**, to reconstruct and run the target script.
+
+---
+
+## Tutorial: first-time setup and usage
+
+This walkthrough installs the tool once as a global command so you can call it from any project directory.
+
+### Step 1 — Clone and place the repo
+
+Create a permanent home for your personal tools, then clone the repo there:
+
+```bash
+# Linux / macOS
+mkdir -p ~/my_tools
+cd ~/my_tools
+git clone https://github.com/your-username/codebase-adaptive-dumper
+```
+
+```powershell
+# Windows PowerShell
+New-Item -ItemType Directory -Path "$HOME\my_tools" -Force
+cd "$HOME\my_tools"
+git clone https://github.com/your-username/codebase-adaptive-dumper
+```
+
+The only files and folders the tool needs to function are:
+
+```
+my_tools/
+└── codebase-adaptive-dumper/
+    ├── analyzer_lib/        ← required
+    ├── analyzer.py          ← required
+    ├── run_analyzer.sh      ← required on Linux / macOS
+    └── run_analyzer.ps1     ← required on Windows
+```
+
+Everything else (README, tests, etc.) can be deleted to keep it lean.
+
+### Step 2 — Add the folder to your PATH
+
+**Linux / macOS** — add this line to your `~/.bashrc`, `~/.zshrc`, or equivalent:
+
+```bash
+export PATH="$HOME/my_tools/codebase-adaptive-dumper:$PATH"
+```
+
+Then reload your shell:
+
+```bash
+source ~/.bashrc   # or source ~/.zshrc
+```
+
+**Windows** — run once in PowerShell (persists across sessions):
+
+```powershell
+$toolDir = "$HOME\my_tools\codebase-adaptive-dumper"
+[System.Environment]::SetEnvironmentVariable(
+    "PATH",
+    "$toolDir;" + [System.Environment]::GetEnvironmentVariable("PATH", "User"),
+    "User"
+)
+```
+
+### Step 3 — Enable script execution
+
+**Linux / macOS** — make the script executable (only needed once):
+
+```bash
+chmod +x ~/my_tools/codebase-adaptive-dumper/run_analyzer.sh
+```
+
+**Windows** — allow local scripts to run (only needed once, per user):
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+```
+
+### Step 4 — Run it from your project
+
+Open a new terminal and `cd` into any Python project. The typical layout the tool expects is:
+
+```
+my_project/
+├── lib/
+│   ├── __init__.py
+│   ├── models/
+│   │   ├── __init__.py
+│   │   └── comp.py
+│   └── utils.py
+└── scripts/
+    └── main.py          ← your target script
+```
+
+From the project root, run the analyzer:
+
+```bash
+# Linux / macOS
+run_analyzer.sh \
+    --target   scripts/main.py \
+    --lib-root . \  # or ./lib
+    --output   dump.txt \
+    --diagnostics ./diag \
+    --verbose
+```
+
+```powershell
+# Windows PowerShell
+run_analyzer.ps1 `
+    -TargetScriptPath    scripts\main.py `
+    -InternalLibraryPath . `  # or .\lib
+    -OutputPath          dump.txt `
+    -DiagnosticsDir      .\diag `
+    -Verbose
+```
+
+When it completes you will find `dump.txt` in the project root and, if you passed `--diagnostics` / `-DiagnosticsDir`, a `diag/` folder containing `dump_report.json`, `code_tree_full.txt`, and `code_tree_pruned.txt`.
 
 ---
 
