@@ -1,6 +1,6 @@
 # Codebase Adaptive Dumper
 
-A PowerShell + Python tool that produces a **minimal runnable `dump.txt`**
+A PowerShell/Bash + Python tool that produces a **minimal runnable `dump.txt`**
 containing only the code a given target script actually needs from your
 internal `lib/` package.
 
@@ -12,14 +12,28 @@ LLM) to reconstruct and run the target script.
 
 ## Quick start
 
-### PowerShell (recommended for non-Python users)
+### Bash — Linux / macOS
+
+```bash
+./run_analyzer.sh \
+    --target   scripts/main.py \
+    --lib-root ./my_project \
+    --output   dump.txt \
+    --diagnostics ./diag
+```
+
+Add `--verbose` for debug-level logging.  
+Use `--python python3` (or a full path) when the default interpreter is not on your PATH.  
+Make the script executable once with `chmod +x run_analyzer.sh`.
+
+### PowerShell — Windows
 
 ```powershell
 .\run_analyzer.ps1 `
     -TargetScriptPath  .\scripts\main.py `
     -InternalLibraryPath .\my_project `
     -OutputPath        .\dump.txt `
-    -ReportPath        .\dump_report.json
+    -DiagnosticsDir    .\diag
 ```
 
 Add `-Verbose` for debug-level logging from the Python layer.  
@@ -32,7 +46,7 @@ python analyzer.py \
     --target   scripts/main.py \
     --lib-root /path/to/my_project \
     --output   dump.txt \
-    --report   dump_report.json \
+    --diagnostics ./diag \
     --verbose
 ```
 
@@ -45,7 +59,9 @@ python analyzer.py \
 | `--target` / `-TargetScriptPath` | The main `.py` script to analyze |
 | `--lib-root` / `-InternalLibraryPath` | Folder containing `lib/`, or `lib/` itself |
 | `--output` / `-OutputPath` | Where to write `dump.txt` |
-| `--report` / `-ReportPath` | *(optional)* JSON diagnostics file |
+| `--diagnostics` / `-DiagnosticsDir` | *(optional)* Directory for `dump_report.json` and code trees |
+| `--python` / `-PythonExe` | Python interpreter to use (default: `python3` on bash, `python` on PS1) |
+| `--verbose` / `-Verbose` | Enable debug-level logging |
 
 ---
 
@@ -126,7 +142,8 @@ from lib.models.comp import compute as c     # Alias rename
 ## Architecture
 
 ```
-run_analyzer.ps1          PowerShell wrapper (validates paths, calls Python)
+run_analyzer.sh           Bash wrapper — Linux / macOS (validates paths, calls Python)
+run_analyzer.ps1          PowerShell wrapper — Windows (validates paths, calls Python)
 analyzer.py               CLI entry point (orchestrates all phases)
 analyzer_lib/
   path_resolver.py        Path ↔ module-name normalization
@@ -134,8 +151,7 @@ analyzer_lib/
   import_resolver.py      Symbol table + import resolution (A–E + re-export chains)
   reachability.py         BFS reachability from target script
   reconstructor.py        Minimal source reconstruction via line slicing
-  dump_writer.py          Writes dump.txt + dump_report.json
-tests/
+  dump_writer.py          Writes dump.txt + diagnostics
   test_analyzer.py        12 required test cases + integration tests
 ```
 
@@ -148,10 +164,10 @@ A module is included only because a required symbol lives there.
 
 ```bash
 # With pytest
-python -m pytest tests/ -v
+python -m pytest analyzer_lib/test_analyzer.py -v
 
 # Without pytest
-python tests/test_analyzer.py
+python analyzer_lib/test_analyzer.py
 ```
 
 ---
