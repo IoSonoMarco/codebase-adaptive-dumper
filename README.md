@@ -1,4 +1,4 @@
-# codebase_dumper
+# Codebase Adaptive Dumper
 
 A PowerShell + Python tool that produces a **minimal runnable `dump.txt`**
 containing only the code a given target script actually needs from your
